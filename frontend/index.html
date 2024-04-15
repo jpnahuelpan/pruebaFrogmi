@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="style/modal.css">
+  </head>
+  <body>
+    <table id="tablaDatos">
+      <h1>Lista de Features</h1>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Feature title</th>
+          <th>Commentarios</th>
+          <th>Type</th>
+          <th>External id</th>
+          <th>Magnitude</th>
+          <th>Place</th>
+          <th>Time</th>
+          <th>Tsunami</th>
+          <th>Mag Type</th>
+          <th>Title</th>
+          <th>Longitude</th>
+          <th>Latutude</th>
+          <th>External Url</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+
+    <div id="miModal" class="modal">
+      <div class="modal-contenido">
+        <span class="cerrar">&times;</span>
+        <h2>Ingresar comentario</h2>
+        <form id="formulario">
+          <label for="mensaje">Mensaje:</label>
+          <textarea id="mensaje" name="mensaje" rows="4" cols="50" maxlength="255"></textarea>
+          <button type="submit">Enviar</button>
+        </form>
+        <table id="tablaDatos2">
+          <h1>Lista de comentarios</h1>
+          <thead>
+            <tr>
+              <th>ID feature</th>
+              <th>Commentarios</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
+
+<script src="js/modulo1.js"></script>
+<script src="js/post.js"></script>
+
+
+<script>
+  let id_feature = 0;
+  const url = "http://localhost:3000/api/features";
+  const params = params_format(2, 10);
+  const queryString = new URLSearchParams(params).toString();
+  const urlCompleta = `${url}?${queryString}`;
+  fetch(urlCompleta)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('La solicitud no fue exitosa');
+      }
+      return response.json();
+    })
+    .then(data => {
+      const tablaBody = document.querySelector("#tablaDatos tbody");
+      data['data'].forEach(item => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${item._id}</td>
+          <button onclick=abrirModal(${item._id})>Agregar comentario.</button>
+          <td>${item.type}</td>
+          <td>${item.attributes.external_id}</td>
+          <td>${item.attributes.magnitude}</td>
+          <td>${item.attributes.place}</td>
+          <td>${item.attributes.time}</td>
+          <td>${item.attributes.tsunami}</td>
+          <td>${item.attributes.mag_type}</td>
+          <td>${item.attributes.title}</td>
+          <td>${item.attributes.coordinates.longitude}</td>
+          <td>${item.attributes.coordinates.latitude}</td>
+          <td><a href=${item.links.external_url}>${item.links.external_url}</a></td>
+        `;
+        tablaBody.appendChild(fila);
+      });
+    })
+    .catch(error => {
+      console.error('Error al obtener datos:', error);
+    });
+
+  function abrirModal(id) {
+    id_feature = id;
+    modal.style.display = "block";
+  };
+  const modal = document.getElementById("miModal");
+  const btnCerrar = document.getElementsByClassName("cerrar")[0];
+  const formulario = document.getElementById("formulario");
+
+
+  btnCerrar.onclick = function() {
+    modal.style.display = "none";
+    const tablaBody = document.querySelector("#tablaDatos2 tbody");
+    tablaBody.innerHTML = "";
+    document.getElementById("mensaje").value = '';
+  }
+
+  window.onclick = function(event) {
+    if (event.target === modal) {
+      modal.style.display = "none";
+      const tablaBody = document.querySelector("#tablaDatos2 tbody");
+      tablaBody.innerHTML = "";
+      document.getElementById("mensaje").value = '';
+    }
+  }
+
+  formulario.addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const comment = {
+      id: id_feature,
+      body: document.getElementById("mensaje").value
+    }
+    fetch(`${url}/${id_feature}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(comment)
+    })
+    .then(response => {
+      if (!response.ok) {
+          alert(`Error code: ${response.status}\nMessage error: ${response.statusText}`);
+        }
+      return response.json();
+    })
+    .then(data => {
+      if (data.message === 'Comentario ingresado exitosamente.') {
+        // alert(data.message);
+        const tablaBody = document.querySelector("#tablaDatos2 tbody");
+        data.comments.forEach(item => {
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${item.feature_id}</td>
+            <td>${item.body}</td>
+          `;
+          tablaBody.appendChild(fila);
+        });
+      } else {
+        alert(data.response);
+      }
+    })
+    .catch(error => {
+      console.error('Error al enviar el formulario:', error);
+    });
+});
+
+</script>

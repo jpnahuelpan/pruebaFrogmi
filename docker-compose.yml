@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  frontend:
+    container_name: frogmifrontend
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
+
+  backend:
+    container_name: frogmibackend
+    build:
+      context: ./backend/
+      dockerfile: Dockerfile
+    ports:
+      - "3000:4567"
+    networks:
+      - net
+    volumes:
+      - ./backend:/frogmiback
+    depends_on:
+      - database
+
+  database:
+    container_name: frogmidb
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: frogmi
+      MONGO_INITDB_ROOT_PASSWORD: frogmipass
+    networks:
+      - net
+    volumes:
+      - mongodb_data:/data/db
+
+networks:
+  net:
+    name: frogminet
+    driver: bridge
+
+volumes:
+  mongodb_data:
